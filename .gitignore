@@ -1,0 +1,6 @@
+build/
+cmake-build-*/
+.vs/
+*.user
+*.suo
+compile_commands.json

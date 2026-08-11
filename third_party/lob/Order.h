@@ -1,0 +1,76 @@
+#pragma once
+
+#include <list>
+#include <memory>
+#include <stdexcept>
+#include <string>
+
+#include "OrderType.h"
+#include "Side.h"
+#include "Usings.h"
+#include "Constants.h"
+
+
+class Order
+{
+public:
+    Order() = default;
+
+    Order(OrderType orderType, OrderId orderId, Side side, Price price, Quantity quantity)
+        : orderType_{ orderType }
+        , orderId_{ orderId }
+        , side_{ side }
+        , price_{ price }
+        , initialQuantity_{ quantity }
+        , remainingQuantity_{ quantity }
+    { }
+
+    Order(OrderId orderId, Side side, Quantity quantity)
+        : Order(OrderType::Market, orderId, side, Constants::InvalidPrice, quantity)
+    { }
+
+    void Reset(OrderType orderType, OrderId orderId, Side side, Price price, Quantity quantity)
+    {
+        orderType_ = orderType;
+        orderId_ = orderId;
+        side_ = side;
+        price_ = price;
+        initialQuantity_ = quantity;
+        remainingQuantity_ = quantity;
+    }
+
+    OrderId GetOrderId() const { return orderId_; }
+    Side GetSide() const { return side_; }
+    Price GetPrice() const { return price_; }
+    OrderType GetOrderType() const { return orderType_; }
+    Quantity GetInitialQuantity() const { return initialQuantity_; }
+    Quantity GetRemainingQuantity() const { return remainingQuantity_; }
+    Quantity GetFilledQuantity() const { return GetInitialQuantity() - GetRemainingQuantity(); }
+    bool IsFilled() const { return GetRemainingQuantity() == 0; }
+    void Fill(Quantity quantity)
+    {
+        if (quantity > GetRemainingQuantity())
+            throw std::logic_error("Order cannot be filled for more than its remaining quantity.");
+
+        remainingQuantity_ -= quantity;
+    }
+    void ToGoodTillCancel(Price price)
+    {
+        if (GetOrderType() != OrderType::Market)
+            throw std::logic_error("Order cannot have its price adjusted, only market orders can.");
+
+        price_ = price;
+        orderType_ = OrderType::GoodTillCancel;
+    }
+
+private:
+    OrderType orderType_{ OrderType::GoodTillCancel };
+    OrderId orderId_{ 0 };
+    Side side_{ Side::Buy };
+    Price price_{ 0 };
+    Quantity initialQuantity_{ 0 };
+    Quantity remainingQuantity_{ 0 };
+};
+
+using OrderPointer = std::shared_ptr<Order>;
+using OrderPointers = std::list<OrderPointer>;
